@@ -22,6 +22,8 @@ export class Product {
     @UpdateDateColumn({ type: 'timestamp', default : () => CURRENT_TIMESTAMP, onUpdate: CURRENT_TIMESTAMP})
     updatedAt: Date;
 
-    @OneToMany(() => Review, (review) => review.product)
+    @OneToMany(() => Review, (review) => review.product, {eager: true})// eager true to always load the relation
     reviews: Review[];
+
+
 }

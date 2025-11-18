@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { CreateProductDto } from "./dtos/create-product.dto";
-import { Repository } from "typeorm";
+import { Between, Like, Repository } from "typeorm";
 import { Product } from "./product.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UpdateProductDto } from "./dtos/update-product.dto";
+import { ReviewService } from "src/reviews/review.service";
+import { title } from "process";
 
 
 @Injectable()
 export class ProductService {
     constructor(
+        @Inject(forwardRef(() => ReviewService)) 
+        private readonly reviewService: ReviewService,
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>
     ){}
@@ -17,15 +21,32 @@ export class ProductService {
     
     /**
      * Creates a new product.
+     * @param dto - The data transfer object containing product details.
+     * @returns The created product.
      */   
     public async create( dto:CreateProductDto){
-        const product = this.productRepository.create(dto);
+        const product = this.productRepository.create(
+            {
+                ...dto,
+                title: dto.title.toLowerCase(),
+            }
+        );
         return await this.productRepository.save(product);
     
     }
         
-    public getAll(){
-        return this.productRepository.find();
+    public getAll(query: any, numberPage: number, productPerPage: number){
+        const filtres = {
+            ...query['title'] ? { title: Like(`%${query['title']}%`) } : {},
+            ...query['minPrice'] && query['maxPrice'] ? { price: Between(query['minPrice'], query['maxPrice']) } : {},
+        }
+
+        return this.productRepository.find({
+            skip: (numberPage - 1) * productPerPage,
+            take: productPerPage,
+            where: filtres,
+            // relations: { reviews: true }
+        });
     }
     
     public async getOne( id:number){
