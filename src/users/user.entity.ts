@@ -20,11 +20,17 @@ export class User {
     @Exclude()
     password: string;
 
+    @Column({type: 'varchar', nullable: true, default: null })
+    imageProfile: string | null;
+
     @Column({type: 'enum', enum: UserRole, default: UserRole.USER })
     role: UserRole;
 
     @Column({ default: false })
     isActive: boolean;
+
+    @Column({ nullable: true, default: null })
+    verificationToken: string ;
 
     @Column({ type: 'timestamp', default: () => CURRENT_TIMESTAMP })
     createdAt: Date;

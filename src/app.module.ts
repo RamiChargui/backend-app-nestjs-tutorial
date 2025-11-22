@@ -9,6 +9,7 @@ import { config } from 'process';
 import { User } from './users/user.entity';
 import { Review } from './reviews/review.entity';
 import { UploadsModule } from './uploads/uploads.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UploadsModule } from './uploads/uploads.module';
     UsersModule,
     ProductsModule,
     ReviewsModule,
+    MailModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {

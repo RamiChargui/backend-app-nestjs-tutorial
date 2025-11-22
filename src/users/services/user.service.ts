@@ -11,9 +11,14 @@ import { UpdateUserDto } from "../dtos/update-user.dto";
 import { UserRole } from "src/utils/user_role";
 import { AuthService } from "./auth.service";
 import e from "express";
+import { join } from "path";
+import { unlinkSync } from "fs";
 
 @Injectable()
 export class UserService {
+    
+    
+    
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
@@ -32,11 +37,15 @@ export class UserService {
          * @param RegisterDto The user registration data.
          * @returns JWT (access token).
          */
-        public async register(userdto: RegisterDto): Promise<AccessToken> {
+        public async register(userdto: RegisterDto) {
             return this.authService.register(userdto);
         }
+
+        public async activeAccount(id: number, token: String) {
+            return this.authService.activeAccount(id, token);
+        }
     
-        public async login(logindto: LoginDto): Promise<AccessToken>{
+        public async login(logindto: LoginDto){
             return this.authService.login(logindto);
         }
 
@@ -78,6 +87,35 @@ export class UserService {
         throw new ForbiddenException('access denied, you are not allowed!');
         
     }
+
+    public async updateUserProfileImage(id: number, imageName: string) {
+
+        const user = await this.getCurrentUser(id);
+        if(user.imageProfile != null) 
+            await this.removeUserProfileImage(id);
+        
+        return this.userRepository.update(id, { imageProfile: imageName });
+
+    }
+
+    /**
+     * removes the profile image of a user.
+     * @param id 
+     * @returns 
+     */
+    public async removeUserProfileImage(id: number) {
+        const user = await this.getCurrentUser(id);
+        
+        if(!user.imageProfile)
+            throw new BadRequestException('no profile image to delete');
+        
+        const imagePath = join(process.cwd(), `./images/users/${user.imageProfile}`);
+        unlinkSync(imagePath);
+
+        user.imageProfile = null;
+        return this.userRepository.save(user);
+    }
+
 
 
 
