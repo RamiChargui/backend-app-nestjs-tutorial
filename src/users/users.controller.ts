@@ -13,6 +13,8 @@ import { diskStorage } from "multer";
 import { currentUser } from "./decorators/current-user.decorator";
 import { JwtPayload } from "src/utils/types";
 import { Response } from "express";
+import { ApiBody, ApiConsumes, ApiSecurity } from "@nestjs/swagger";
+import { ImageUploadDto } from "./dtos/image-upload.dto";
 
  @Controller("api/users")
 export class UsersController{
@@ -38,6 +40,7 @@ export class UsersController{
 
     @Get("/current-user")
     @UseGuards(AuthGuard)
+    @ApiSecurity('bearer')
     public getCurrentUser(@Req() req: any){
         const id = req.user.id;
         console.log('route handler called!');
@@ -55,6 +58,7 @@ export class UsersController{
     @Put("/update")
     @Roles(UserRole.USER, UserRole.ADMIN)
     @UseGuards(AuthRoleGuard)
+    @ApiSecurity('bearer')
     public updateUser(@Body() body: UpdateUserDto, @Req() req: any) {
         const id = req.user.id;
         return this.userService.updateUser(id, body);
@@ -63,14 +67,17 @@ export class UsersController{
     @Delete(":id")
     @Roles(UserRole.USER, UserRole.ADMIN)
     @UseGuards(AuthRoleGuard)
+    @ApiSecurity('bearer')
     public deleteUser(@Param("id", ParseIntPipe) id: number, @Req() req: any) {
         return this.userService.deleteUser(id, req.user);
     }
 
-
     @Post("/upload-image")
     @UseGuards(AuthGuard)
     @UseInterceptors(FileInterceptor('profile-image'))
+    @ApiSecurity('bearer')
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImageUploadDto, description: 'Profile image upload' })
     public uploadProfileImage(
         @UploadedFile() file: Express.Multer.File,
         @currentUser() payload: JwtPayload){
@@ -80,6 +87,7 @@ export class UsersController{
 
     @Delete("/images/remove-profile-image")
     @UseGuards(AuthGuard)
+    @ApiSecurity('bearer')
     public removeUserProfileImage(@currentUser() payload: JwtPayload){
         
         return this.userService.removeUserProfileImage(payload.id);
