@@ -1,4 +1,10 @@
-import { ClassSerializerInterceptor, Module } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -10,6 +16,7 @@ import { User } from './users/user.entity';
 import { Review } from './reviews/review.entity';
 import { UploadsModule } from './uploads/uploads.module';
 import { MailModule } from './mail/mail.module';
+import { ApiKeyMiddleware } from './middlewares/api-key.middleware';
 
 @Module({
   imports: [
@@ -23,27 +30,35 @@ import { MailModule } from './mail/mail.module';
       useFactory: (config: ConfigService) => {
         return {
           type: 'postgres',
-          database: config.get<string>("DB_DATABASE"),
-          username: config.get<string>("DB_USERNAME"),
-          password: config.get<string>("DB_PASSWORD"),
-          port: config.get<number>("DB_PORT"),
-          host: config.get<string>("DB_HOST"),
-          synchronize: process.env.NODE_ENV != 'production', 
-          entities: [Product, User, Review]
-        }
-      }
-
+          database: config.get<string>('DB_DATABASE'),
+          username: config.get<string>('DB_USERNAME'),
+          password: config.get<string>('DB_PASSWORD'),
+          port: config.get<number>('DB_PORT'),
+          host: config.get<string>('DB_HOST'),
+          synchronize: process.env.NODE_ENV != 'production',
+          entities: [Product, User, Review],
+        };
+      },
     }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.dev`,
-    })
+    }),
   ],
   providers: [
     {
-      provide : 'APP_INTERCEPTOR',
-      useClass: ClassSerializerInterceptor
-    }
-  ]
+      provide: 'APP_INTERCEPTOR',
+      useClass: ClassSerializerInterceptor,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(ApiKeyMiddleware)
+      .forRoutes(
+        { path: 'api/products', method: RequestMethod.ALL },
+        { path: 'api/reviews', method: RequestMethod.ALL },
+      );
+  }
+}
